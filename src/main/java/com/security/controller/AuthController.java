@@ -24,7 +24,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*", allowCredentials = "false")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://localhost:3000/PanInsight"}, allowCredentials = "true")
 public class AuthController {
 
     @Autowired
@@ -139,5 +139,10 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("User is not authenticated"));
         }
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<ApiResponse> testEndpoint() {
+        return ResponseEntity.ok(ApiResponse.success("Backend is working!"));
     }
 } 

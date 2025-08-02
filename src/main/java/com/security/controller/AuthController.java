@@ -60,16 +60,13 @@ public class AuthController {
     public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest loginRequest, 
                                            HttpServletRequest request) {
         try {
-            // Authenticate user
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
             );
 
-            // Set authentication in security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
             securityContextRepository.saveContext(SecurityContextHolder.getContext(), request, null);
 
-            // Get user details
             User user = userService.findByEmail(loginRequest.getEmail());
             
             Map<String, Object> userData = new HashMap<>();

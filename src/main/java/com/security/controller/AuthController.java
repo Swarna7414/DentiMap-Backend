@@ -9,6 +9,9 @@ import com.security.dto.ResetPasswordRequest;
 import com.security.model.User;
 
 import com.security.service.UserService;
+import com.security.service.OAuth2UserService;
+import com.security.model.OAuth2User;
+import com.security.dto.OAuth2UserResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -36,6 +39,9 @@ public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private OAuth2UserService oauth2UserService;
 
 
 
@@ -302,11 +308,65 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.isAuthenticated()) {
-                Map<String, Object> userData = new HashMap<>();
-                userData.put("message", "OAuth2 login successful");
-                userData.put("principal", authentication.getPrincipal());
-                userData.put("authorities", authentication.getAuthorities());
-                return ResponseEntity.ok(ApiResponse.success("OAuth2 login successful", userData));
+                String email = authentication.getName();
+                
+                // Check if user exists in OAuth2 table
+                Optional<OAuth2User> oauth2User = oauth2UserService.findByEmail(email);
+                
+                if (oauth2User.isPresent()) {
+                    // Update last login
+                    oauth2UserService.updateLastLogin(email);
+                    
+                    OAuth2User user = oauth2User.get();
+                    OAuth2UserResponse userResponse = new OAuth2UserResponse(
+                        user.getId(), user.getFirstName(), user.getLastName(), 
+                        user.getEmail(), user.getGoogleId(), user.getProfilePicture(),
+                        user.getProvider(), user.getCreatedAt(), user.getLastLogin(), 
+                        user.getIsActive()
+                    );
+                    
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("message", "OAuth2 login successful");
+                    userData.put("user", userResponse);
+                    userData.put("loginType", "GOOGLE_OAUTH2");
+                    
+                    return ResponseEntity.ok(ApiResponse.success("OAuth2 login successful", userData));
+                } else {
+                    // Create new OAuth2 user
+                    String firstName = "";
+                    String lastName = "";
+                    String googleId = "";
+                    String profilePicture = "";
+                    
+                    // Extract user info from OAuth2 principal
+                    if (authentication.getPrincipal() instanceof org.springframework.security.oauth2.core.user.OAuth2User) {
+                        org.springframework.security.oauth2.core.user.OAuth2User oauth2Principal = 
+                            (org.springframework.security.oauth2.core.user.OAuth2User) authentication.getPrincipal();
+                        
+                        firstName = oauth2Principal.getAttribute("given_name");
+                        lastName = oauth2Principal.getAttribute("family_name");
+                        googleId = oauth2Principal.getName();
+                        profilePicture = oauth2Principal.getAttribute("picture");
+                    }
+                    
+                    OAuth2User newUser = oauth2UserService.createOAuth2User(
+                        firstName, lastName, email, googleId, profilePicture
+                    );
+                    
+                    OAuth2UserResponse userResponse = new OAuth2UserResponse(
+                        newUser.getId(), newUser.getFirstName(), newUser.getLastName(), 
+                        newUser.getEmail(), newUser.getGoogleId(), newUser.getProfilePicture(),
+                        newUser.getProvider(), newUser.getCreatedAt(), newUser.getLastLogin(), 
+                        newUser.getIsActive()
+                    );
+                    
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("message", "OAuth2 user created and login successful");
+                    userData.put("user", userResponse);
+                    userData.put("loginType", "GOOGLE_OAUTH2");
+                    
+                    return ResponseEntity.ok(ApiResponse.success("OAuth2 user created and login successful", userData));
+                }
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("OAuth2 authentication failed"));
@@ -328,6 +388,71 @@ public class AuthController {
         Map<String, Object> data = new HashMap<>();
         data.put("googleLoginUrl", "/oauth2/authorization/google");
         return ResponseEntity.ok(ApiResponse.success("OAuth2 login URLs", data));
+    }
+
+    // OAuth2 User Management Endpoints
+    @GetMapping("/oauth2/users")
+    public ResponseEntity<ApiResponse> getAllOAuth2Users() {
+        try {
+            List<OAuth2User> users = oauth2UserService.getAllOAuth2Users();
+            List<OAuth2UserResponse> userResponses = users.stream()
+                .map(user -> new OAuth2UserResponse(
+                    user.getId(), user.getFirstName(), user.getLastName(), 
+                    user.getEmail(), user.getGoogleId(), user.getProfilePicture(),
+                    user.getProvider(), user.getCreatedAt(), user.getLastLogin(), 
+                    user.getIsActive()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("users", userResponses);
+            data.put("count", userResponses.size());
+            
+            return ResponseEntity.ok(ApiResponse.success("OAuth2 users retrieved successfully", data));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve OAuth2 users: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/oauth2/users/{email}")
+    public ResponseEntity<ApiResponse> getOAuth2UserByEmail(@PathVariable String email) {
+        try {
+            Optional<OAuth2User> userOpt = oauth2UserService.findByEmail(email);
+            if (userOpt.isPresent()) {
+                OAuth2User user = userOpt.get();
+                OAuth2UserResponse userResponse = new OAuth2UserResponse(
+                    user.getId(), user.getFirstName(), user.getLastName(), 
+                    user.getEmail(), user.getGoogleId(), user.getProfilePicture(),
+                    user.getProvider(), user.getCreatedAt(), user.getLastLogin(), 
+                    user.getIsActive()
+                );
+                
+                return ResponseEntity.ok(ApiResponse.success("OAuth2 user found", userResponse));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("OAuth2 user not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve OAuth2 user: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/oauth2/users/{email}")
+    public ResponseEntity<ApiResponse> deleteOAuth2User(@PathVariable String email) {
+        try {
+            if (oauth2UserService.existsByEmail(email)) {
+                oauth2UserService.deleteUser(email);
+                return ResponseEntity.ok(ApiResponse.success("OAuth2 user deleted successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("OAuth2 user not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to delete OAuth2 user: " + e.getMessage()));
+        }
     }
 
 

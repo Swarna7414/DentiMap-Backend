@@ -7,7 +7,9 @@ import com.security.dto.LoginRequest;
 import com.security.dto.RegistrationRequest;
 import com.security.dto.ResetPasswordRequest;
 import com.security.model.User;
-
+import com.security.service.OAuth2UserService;
+import com.security.model.OAuth2User;
+import com.security.dto.OAuth2UserResponse;
 import com.security.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -25,6 +27,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -36,6 +40,9 @@ public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+    
+    @Autowired
+    private OAuth2UserService oauth2UserService;
 
 
 
@@ -302,16 +309,78 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.isAuthenticated()) {
-                Map<String, Object> userData = new HashMap<>();
-                userData.put("message", "OAuth2 login successful");
-                userData.put("principal", authentication.getPrincipal());
-                userData.put("authorities", authentication.getAuthorities());
-                return ResponseEntity.ok(ApiResponse.success("OAuth2 login successful", userData));
+                
+                // Extract OAuth2 user information
+                Object principal = authentication.getPrincipal();
+                String email = null;
+                String firstName = null;
+                String lastName = null;
+                String googleId = null;
+                String profilePicture = null;
+                
+                if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User) {
+                    org.springframework.security.oauth2.core.user.OAuth2User oauth2User = 
+                        (org.springframework.security.oauth2.core.user.OAuth2User) principal;
+                    
+                    email = oauth2User.getAttribute("email");
+                    firstName = oauth2User.getAttribute("given_name");
+                    lastName = oauth2User.getAttribute("family_name");
+                    googleId = oauth2User.getName(); // This is the Google ID
+                    profilePicture = oauth2User.getAttribute("picture");
+                    
+                    System.out.println("OAuth2 User Info - Email: " + email + ", Name: " + firstName + " " + lastName);
+                }
+                
+                if (email != null) {
+                    // Check if user exists in OAuth2 table
+                    Optional<OAuth2User> existingUser = oauth2UserService.findByEmail(email);
+                    OAuth2User oauth2User;
+                    
+                    if (existingUser.isPresent()) {
+                        // Update last login for existing user
+                        oauth2User = oauth2UserService.updateLastLogin(email);
+                        System.out.println("Existing OAuth2 user logged in: " + email);
+                    } else {
+                        // Create new OAuth2 user
+                        oauth2User = oauth2UserService.createOAuth2User(
+                            firstName != null ? firstName : "Unknown",
+                            lastName != null ? lastName : "User",
+                            email,
+                            googleId != null ? googleId : "unknown",
+                            profilePicture != null ? profilePicture : ""
+                        );
+                        System.out.println("New OAuth2 user created: " + email);
+                    }
+                    
+                    // Create response data
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("message", "OAuth2 user created and login successful");
+                    userData.put("user", new OAuth2UserResponse(
+                        oauth2User.getId(),
+                        oauth2User.getFirstName(),
+                        oauth2User.getLastName(),
+                        oauth2User.getEmail(),
+                        oauth2User.getGoogleId(),
+                        oauth2User.getProfilePicture(),
+                        oauth2User.getProvider(),
+                        oauth2User.getCreatedAt(),
+                        oauth2User.getLastLogin(),
+                        oauth2User.getIsActive()
+                    ));
+                    userData.put("loginType", "GOOGLE_OAUTH2");
+                    
+                    return ResponseEntity.ok(ApiResponse.success("OAuth2 user created and login successful", userData));
+                } else {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(ApiResponse.error("Could not extract user information from OAuth2"));
+                }
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("OAuth2 authentication failed"));
             }
         } catch (Exception e) {
+            System.out.println("OAuth2 success handler error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("OAuth2 success handler failed: " + e.getMessage()));
         }
@@ -330,5 +399,69 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("OAuth2 login URLs", data));
     }
 
+    // OAuth2 User Management Endpoints
+    @GetMapping("/oauth2/users")
+    public ResponseEntity<ApiResponse> getAllOAuth2Users() {
+        try {
+            List<OAuth2User> users = oauth2UserService.getAllOAuth2Users();
+            List<OAuth2UserResponse> userResponses = users.stream()
+                .map(user -> new OAuth2UserResponse(
+                    user.getId(), user.getFirstName(), user.getLastName(), 
+                    user.getEmail(), user.getGoogleId(), user.getProfilePicture(),
+                    user.getProvider(), user.getCreatedAt(), user.getLastLogin(), 
+                    user.getIsActive()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("users", userResponses);
+            data.put("count", userResponses.size());
+            
+            return ResponseEntity.ok(ApiResponse.success("OAuth2 users retrieved successfully", data));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve OAuth2 users: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/oauth2/users/{email}")
+    public ResponseEntity<ApiResponse> getOAuth2UserByEmail(@PathVariable String email) {
+        try {
+            Optional<OAuth2User> userOpt = oauth2UserService.findByEmail(email);
+            if (userOpt.isPresent()) {
+                OAuth2User user = userOpt.get();
+                OAuth2UserResponse userResponse = new OAuth2UserResponse(
+                    user.getId(), user.getFirstName(), user.getLastName(), 
+                    user.getEmail(), user.getGoogleId(), user.getProfilePicture(),
+                    user.getProvider(), user.getCreatedAt(), user.getLastLogin(), 
+                    user.getIsActive()
+                );
+                
+                return ResponseEntity.ok(ApiResponse.success("OAuth2 user found", userResponse));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("OAuth2 user not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to retrieve OAuth2 user: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/oauth2/users/{email}")
+    public ResponseEntity<ApiResponse> deleteOAuth2User(@PathVariable String email) {
+        try {
+            if (oauth2UserService.existsByEmail(email)) {
+                oauth2UserService.deleteUser(email);
+                return ResponseEntity.ok(ApiResponse.success("OAuth2 user deleted successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("OAuth2 user not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to delete OAuth2 user: " + e.getMessage()));
+        }
+    }
 
 } 

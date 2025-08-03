@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -25,6 +26,8 @@ public class SecurityConfig {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -55,8 +58,15 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/test", "/api/auth/debug/**").permitAll()
+                .requestMatchers("/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
+                .requestMatchers("/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                 .requestMatchers("/api/auth/check-auth").permitAll()
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .defaultSuccessUrl("/api/auth/oauth2-success", true)
+                .failureUrl("/api/auth/oauth2-failure")
             )
             .authenticationProvider(authenticationProvider());
 

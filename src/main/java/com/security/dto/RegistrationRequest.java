@@ -19,6 +19,9 @@ public class RegistrationRequest {
     @Past(message = "Date of birth must be in the past")
     private LocalDate dateOfBirth;
 
+    @NotBlank(message = "Gender is required")
+    private String gender;
+
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
@@ -33,10 +36,11 @@ public class RegistrationRequest {
     public RegistrationRequest() {}
 
     // Constructor with fields
-    public RegistrationRequest(String firstName, String lastName, LocalDate dateOfBirth, String email, String password, String confirmPassword) {
+    public RegistrationRequest(String firstName, String lastName, LocalDate dateOfBirth, String gender, String email, String password, String confirmPassword) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
         this.email = email;
         this.password = password;
         this.confirmPassword = confirmPassword;
@@ -65,6 +69,14 @@ public class RegistrationRequest {
 
     public void setDateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public String getEmail() {

@@ -1,9 +1,13 @@
 package com.security.controller;
 
 import com.security.dto.ApiResponse;
+import com.security.dto.EmailVerificationRequest;
+import com.security.dto.ForgotPasswordRequest;
 import com.security.dto.LoginRequest;
 import com.security.dto.RegistrationRequest;
+import com.security.dto.ResetPasswordRequest;
 import com.security.model.User;
+
 import com.security.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -32,6 +36,8 @@ public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+
 
     private SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
@@ -231,4 +237,98 @@ public class AuthController {
                     .body(ApiResponse.error("Error deleting user: " + e.getMessage()));
         }
     }
+
+    // Email Verification Endpoints
+    @PostMapping("/verify-email")
+    public ResponseEntity<ApiResponse> verifyEmail(@Valid @RequestBody EmailVerificationRequest request) {
+        try {
+            userService.verifyEmail(request.getToken());
+            return ResponseEntity.ok(ApiResponse.success("Email verified successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Email verification failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse> resendVerificationEmail(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            userService.resendVerificationEmail(request.getEmail());
+            return ResponseEntity.ok(ApiResponse.success("Verification email sent successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to send verification email: " + e.getMessage()));
+        }
+    }
+
+    // Password Reset Endpoints
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            userService.sendPasswordResetEmail(request.getEmail());
+            return ResponseEntity.ok(ApiResponse.success("Password reset email sent successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to send password reset email: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            if (!request.getPassword().equals(request.getConfirmPassword())) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Password and confirm password do not match"));
+            }
+            
+            userService.resetPassword(request.getToken(), request.getPassword());
+            return ResponseEntity.ok(ApiResponse.success("Password reset successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Password reset failed: " + e.getMessage()));
+        }
+    }
+
+    // OAuth2 Endpoints
+    @GetMapping("/oauth2-success")
+    public ResponseEntity<ApiResponse> oauth2Success() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                Map<String, Object> userData = new HashMap<>();
+                userData.put("message", "OAuth2 login successful");
+                userData.put("principal", authentication.getPrincipal());
+                userData.put("authorities", authentication.getAuthorities());
+                return ResponseEntity.ok(ApiResponse.success("OAuth2 login successful", userData));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("OAuth2 authentication failed"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("OAuth2 success handler failed: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/oauth2-failure")
+    public ResponseEntity<ApiResponse> oauth2Failure() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("OAuth2 authentication failed"));
+    }
+
+    @GetMapping("/oauth2/login")
+    public ResponseEntity<ApiResponse> oauth2LoginUrl() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("googleLoginUrl", "/oauth2/authorization/google");
+        return ResponseEntity.ok(ApiResponse.success("OAuth2 login URLs", data));
+    }
+
+
 } 

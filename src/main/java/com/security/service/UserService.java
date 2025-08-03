@@ -11,4 +11,8 @@ public interface UserService {
     
     boolean existsByEmail(String email);
     void deleteUser(String email);
+    void sendPasswordResetEmail(String email);
+    void resetPassword(String token, String newPassword);
+    void verifyEmail(String token);
+    void resendVerificationEmail(String email);
 } 

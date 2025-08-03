@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -34,6 +35,10 @@ public class User implements UserDetails {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @NotBlank(message = "Gender is required")
+    @Column(name = "gender")
+    private String gender;
+
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     @Column(unique = true)
@@ -45,6 +50,12 @@ public class User implements UserDetails {
     @Column(name = "created_at")
     private LocalDate createdAt;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDate.now();
@@ -54,10 +65,11 @@ public class User implements UserDetails {
     public User() {}
 
     // Constructor with fields
-    public User(String firstName, String lastName, LocalDate dateOfBirth, String email, String password) {
+    public User(String firstName, String lastName, LocalDate dateOfBirth, String gender, String email, String password) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
         this.email = email;
         this.password = password;
     }
@@ -95,6 +107,14 @@ public class User implements UserDetails {
         this.dateOfBirth = dateOfBirth;
     }
 
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -113,6 +133,22 @@ public class User implements UserDetails {
 
     public void setCreatedAt(LocalDate createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public LocalDateTime getEmailVerifiedAt() {
+        return emailVerifiedAt;
+    }
+
+    public void setEmailVerifiedAt(LocalDateTime emailVerifiedAt) {
+        this.emailVerifiedAt = emailVerifiedAt;
     }
 
     // UserDetails implementation

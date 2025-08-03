@@ -2,6 +2,19 @@
 
 ## MySQL Configuration for Spring Boot Security Application
 
+### Database Schema
+The application uses the following user table structure:
+- `id` (Primary Key)
+- `first_name` (Required)
+- `last_name` (Required)
+- `date_of_birth` (Required, Past date)
+- `gender` (Required)
+- `email` (Required, Unique)
+- `password` (Required, Encrypted)
+- `created_at` (Auto-generated)
+- `email_verified` (Boolean, Default: false)
+- `email_verified_at` (DateTime, Nullable)
+
 ### Step 1: Ensure MySQL is Running
 - Make sure MySQL Server is running on your system
 - Default port: 3306
@@ -30,14 +43,14 @@ Edit `src/main/resources/application.properties` and update the MySQL credential
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/harshithsecurity
 spring.datasource.username=root
-spring.datasource.password=YOUR_ACTUAL_MYSQL_PASSWORD
+spring.datasource.password=Harihara01@01
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 server.servlet.session.timeout=0
 ```
 
-**Replace `YOUR_ACTUAL_MYSQL_PASSWORD` with your actual MySQL root password.**
+**Database password is configured as: `Harihara01@01`**
 
 ### Step 4: Test Database Connection
 

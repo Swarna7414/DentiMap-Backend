@@ -19,19 +19,17 @@ public class EmailServiceImpl implements EmailService {
     private String contextPath;
 
     @Override
-    public void sendVerificationEmail(String to, String verificationToken) {
+    public void sendVerificationEmail(String to, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
         message.setSubject("Email Verification - PanInsight");
         
-        String verificationUrl = "http://localhost:3000/verify-email?token=" + verificationToken;
-        
         message.setText(
             "Hello!\n\n" +
-            "Thank you for registering with PanInsight. Please verify your email address by clicking the link below:\n\n" +
-            verificationUrl + "\n\n" +
-            "This link will expire in 24 hours.\n\n" +
+            "Thank you for registering with PanInsight. Please verify your email address using the OTP below:\n\n" +
+            "Your verification OTP is: " + otp + "\n\n" +
+            "This OTP will expire in 10 minutes.\n\n" +
             "If you didn't create an account, please ignore this email.\n\n" +
             "Best regards,\n" +
             "PanInsight Team"
@@ -41,20 +39,17 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendPasswordResetEmail(String to, String resetToken) {
+    public void sendPasswordResetEmail(String to, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
         message.setSubject("Password Reset Request - PanInsight");
         
-        String resetUrl = "http://localhost:3000/reset-password?token=" + resetToken;
-        
         message.setText(
             "Hello!\n\n" +
             "You have requested to reset your password for your PanInsight account.\n\n" +
-            "Click the link below to reset your password:\n\n" +
-            resetUrl + "\n\n" +
-            "This link will expire in 1 hour.\n\n" +
+            "Your password reset OTP is: " + otp + "\n\n" +
+            "This OTP will expire in 10 minutes.\n\n" +
             "If you didn't request a password reset, please ignore this email.\n\n" +
             "Best regards,\n" +
             "PanInsight Team"

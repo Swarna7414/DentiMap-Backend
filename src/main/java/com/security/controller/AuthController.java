@@ -1,11 +1,12 @@
 package com.security.controller;
 
 import com.security.dto.ApiResponse;
-import com.security.dto.EmailVerificationRequest;
 import com.security.dto.ForgotPasswordRequest;
 import com.security.dto.LoginRequest;
 import com.security.dto.RegistrationRequest;
 import com.security.dto.ResetPasswordRequest;
+import com.security.dto.OTPVerificationRequest;
+import com.security.dto.RegistrationOTPRequest;
 import com.security.model.User;
 import com.security.service.OAuth2UserService;
 import com.security.model.OAuth2User;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -51,21 +53,62 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegistrationRequest registrationRequest) {
         try {
-            User user = userService.registerUser(registrationRequest);
+            // Initiate registration by sending OTP
+            userService.initiateRegistration(registrationRequest.getEmail());
             
-            Map<String, Object> userData = new HashMap<>();
-            userData.put("id", user.getId());
-            userData.put("firstName", user.getFirstName());
-            userData.put("lastName", user.getLastName());
-            userData.put("email", user.getEmail());
-            userData.put("dateOfBirth", user.getDateOfBirth());
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("message", "Registration OTP sent successfully");
+            responseData.put("email", registrationRequest.getEmail());
+            responseData.put("redirectUrl", "/otp-verification?email=" + registrationRequest.getEmail());
             
-            return ResponseEntity.ok(ApiResponse.success("User registered successfully", userData));
+            return ResponseEntity.ok(ApiResponse.success("Registration OTP sent successfully", responseData));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Registration failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-registration-otp")
+    public ResponseEntity<ApiResponse> verifyRegistrationOTP(@Valid @RequestBody RegistrationOTPRequest request) {
+        try {
+            // Create RegistrationRequest from the OTP request
+            RegistrationRequest registrationRequest = new RegistrationRequest();
+            registrationRequest.setFirstName(request.getFirstName());
+            registrationRequest.setLastName(request.getLastName());
+            registrationRequest.setDateOfBirth(LocalDate.parse(request.getDateOfBirth()));
+            registrationRequest.setGender(request.getGender());
+            registrationRequest.setEmail(request.getEmail());
+            registrationRequest.setPassword(request.getPassword());
+            registrationRequest.setConfirmPassword(request.getConfirmPassword());
+            
+            // Complete registration with OTP verification
+            userService.completeRegistration(request.getOtp(), request.getEmail(), registrationRequest);
+            
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("message", "Registration completed successfully");
+            responseData.put("email", request.getEmail());
+            
+            return ResponseEntity.ok(ApiResponse.success("Registration completed successfully", responseData));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Registration verification failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/resend-registration-otp")
+    public ResponseEntity<ApiResponse> resendRegistrationOTP(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            userService.resendRegistrationOTP(request.getEmail());
+            return ResponseEntity.ok(ApiResponse.success("Registration OTP sent successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to send registration OTP: " + e.getMessage()));
         }
     }
 
@@ -247,9 +290,9 @@ public class AuthController {
 
     // Email Verification Endpoints
     @PostMapping("/verify-email")
-    public ResponseEntity<ApiResponse> verifyEmail(@Valid @RequestBody EmailVerificationRequest request) {
+    public ResponseEntity<ApiResponse> verifyEmail(@Valid @RequestBody OTPVerificationRequest request) {
         try {
-            userService.verifyEmail(request.getToken());
+            userService.verifyEmail(request.getOtp(), request.getEmail());
             return ResponseEntity.ok(ApiResponse.success("Email verified successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -293,7 +336,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(ApiResponse.error("Password and confirm password do not match"));
             }
             
-            userService.resetPassword(request.getToken(), request.getPassword());
+            userService.resetPassword(request.getOtp(), request.getEmail(), request.getPassword());
             return ResponseEntity.ok(ApiResponse.success("Password reset successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

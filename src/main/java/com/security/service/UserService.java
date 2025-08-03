@@ -12,7 +12,10 @@ public interface UserService {
     boolean existsByEmail(String email);
     void deleteUser(String email);
     void sendPasswordResetEmail(String email);
-    void resetPassword(String token, String newPassword);
-    void verifyEmail(String token);
+    void resetPassword(String otp, String email, String newPassword);
+    void verifyEmail(String otp, String email);
     void resendVerificationEmail(String email);
+    void initiateRegistration(String email);
+    void completeRegistration(String otp, String email, RegistrationRequest registrationRequest);
+    void resendRegistrationOTP(String email);
 } 

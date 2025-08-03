@@ -1,16 +1,16 @@
 package com.security.service;
 
 import com.security.dto.RegistrationRequest;
-import com.security.model.Token;
+import com.security.model.OTP;
 import com.security.model.User;
-import com.security.repository.TokenRepository;
+import com.security.repository.OTPRepository;
 import com.security.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.Random;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -19,7 +19,7 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private TokenRepository tokenRepository;
+    private OTPRepository otpRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -28,15 +28,42 @@ public class UserServiceImpl implements UserService {
     private EmailService emailService;
 
     @Override
-    public User registerUser(RegistrationRequest registrationRequest) {
+    public void initiateRegistration(String email) {
+        // Check if email already exists
+        if (existsByEmail(email)) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+
+        // Generate registration OTP
+        String registrationOtp = generateOTP();
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10); // 10 minutes expiry
+
+        // Save OTP
+        OTP otp = new OTP(registrationOtp, email, OTP.OTPType.REGISTRATION_VERIFICATION, expiryDate);
+        otpRepository.save(otp);
+
+        // Send registration OTP email
+        emailService.sendVerificationEmail(email, registrationOtp);
+    }
+
+    @Override
+    public void completeRegistration(String otp, String email, RegistrationRequest registrationRequest) {
         // Validate password confirmation
         if (!registrationRequest.getPassword().equals(registrationRequest.getConfirmPassword())) {
             throw new IllegalArgumentException("Password and confirm password do not match");
         }
 
         // Check if email already exists
-        if (existsByEmail(registrationRequest.getEmail())) {
+        if (existsByEmail(email)) {
             throw new IllegalArgumentException("Email already exists");
+        }
+
+        // Verify OTP
+        OTP registrationOtp = otpRepository.findByOtpCodeAndEmailAndOtpTypeAndUsedFalse(otp, email, OTP.OTPType.REGISTRATION_VERIFICATION)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired registration OTP"));
+
+        if (registrationOtp.isExpired()) {
+            throw new IllegalArgumentException("Registration OTP has expired");
         }
 
         // Create new user
@@ -45,27 +72,51 @@ public class UserServiceImpl implements UserService {
         user.setLastName(registrationRequest.getLastName());
         user.setDateOfBirth(registrationRequest.getDateOfBirth());
         user.setGender(registrationRequest.getGender());
-        user.setEmail(registrationRequest.getEmail());
+        user.setEmail(email);
         
         // Encrypt password
         String encodedPassword = passwordEncoder.encode(registrationRequest.getPassword());
         user.setPassword(encodedPassword);
 
+        // Set email as verified since OTP was verified
+        user.setEmailVerified(true);
+        user.setEmailVerifiedAt(LocalDateTime.now());
+
         // Save user
-        User savedUser = userRepository.save(user);
+        userRepository.save(user);
 
-        // Generate verification token
-        String verificationToken = UUID.randomUUID().toString();
-        LocalDateTime expiryDate = LocalDateTime.now().plusHours(24); // 24 hours expiry
+        // Mark OTP as used
+        registrationOtp.setUsed(true);
+        otpRepository.save(registrationOtp);
 
-        // Save token
-        Token token = new Token(verificationToken, Token.TokenType.EMAIL_VERIFICATION, savedUser, expiryDate);
-        tokenRepository.save(token);
+        // Send welcome email
+        emailService.sendWelcomeEmail(user.getEmail(), user.getFirstName());
+    }
 
-        // Send verification email
-        emailService.sendVerificationEmail(savedUser.getEmail(), verificationToken);
+    @Override
+    public void resendRegistrationOTP(String email) {
+        // Check if email already exists
+        if (existsByEmail(email)) {
+            throw new IllegalArgumentException("Email already exists");
+        }
 
-        return savedUser;
+        // Generate new registration OTP
+        String registrationOtp = generateOTP();
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10); // 10 minutes expiry
+
+        // Save OTP
+        OTP otp = new OTP(registrationOtp, email, OTP.OTPType.REGISTRATION_VERIFICATION, expiryDate);
+        otpRepository.save(otp);
+
+        // Send registration OTP email
+        emailService.sendVerificationEmail(email, registrationOtp);
+    }
+
+    @Override
+    public User registerUser(RegistrationRequest registrationRequest) {
+        // This method is kept for backward compatibility but should not be used
+        // Use initiateRegistration and completeRegistration instead
+        throw new UnsupportedOperationException("Please use initiateRegistration and completeRegistration methods instead");
     }
 
     @Override
@@ -86,6 +137,13 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    // Helper method to generate 5-digit OTP
+    private String generateOTP() {
+        Random random = new Random();
+        int otp = 10000 + random.nextInt(90000); // Generates 5-digit number between 10000-99999
+        return String.valueOf(otp);
+    }
+
     @Override
     public void sendPasswordResetEmail(String email) {
         User user = findByEmail(email);
@@ -93,53 +151,61 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("User not found with email: " + email);
         }
 
-        // Generate reset token
-        String resetToken = UUID.randomUUID().toString();
-        LocalDateTime expiryDate = LocalDateTime.now().plusHours(1); // 1 hour expiry
+        // Generate reset OTP
+        String resetOtp = generateOTP();
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10); // 10 minutes expiry
 
-        // Save token
-        Token token = new Token(resetToken, Token.TokenType.PASSWORD_RESET, user, expiryDate);
-        tokenRepository.save(token);
+        // Save OTP
+        OTP otp = new OTP(resetOtp, email, OTP.OTPType.PASSWORD_RESET, expiryDate);
+        otpRepository.save(otp);
 
         // Send email
-        emailService.sendPasswordResetEmail(email, resetToken);
+        emailService.sendPasswordResetEmail(email, resetOtp);
     }
 
     @Override
-    public void resetPassword(String token, String newPassword) {
-        Token resetToken = tokenRepository.findByTokenAndTokenTypeAndUsedFalse(token, Token.TokenType.PASSWORD_RESET)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset token"));
+    public void resetPassword(String otp, String email, String newPassword) {
+        OTP resetOtp = otpRepository.findByOtpCodeAndEmailAndOtpTypeAndUsedFalse(otp, email, OTP.OTPType.PASSWORD_RESET)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset OTP"));
 
-        if (resetToken.isExpired()) {
-            throw new IllegalArgumentException("Reset token has expired");
+        if (resetOtp.isExpired()) {
+            throw new IllegalArgumentException("Reset OTP has expired");
         }
 
-        User user = resetToken.getUser();
+        User user = findByEmail(email);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        // Mark token as used
-        resetToken.setUsed(true);
-        tokenRepository.save(resetToken);
+        // Mark OTP as used
+        resetOtp.setUsed(true);
+        otpRepository.save(resetOtp);
     }
 
     @Override
-    public void verifyEmail(String token) {
-        Token verificationToken = tokenRepository.findByTokenAndTokenTypeAndUsedFalse(token, Token.TokenType.EMAIL_VERIFICATION)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired verification token"));
+    public void verifyEmail(String otp, String email) {
+        OTP verificationOtp = otpRepository.findByOtpCodeAndEmailAndOtpTypeAndUsedFalse(otp, email, OTP.OTPType.EMAIL_VERIFICATION)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired verification OTP"));
 
-        if (verificationToken.isExpired()) {
-            throw new IllegalArgumentException("Verification token has expired");
+        if (verificationOtp.isExpired()) {
+            throw new IllegalArgumentException("Verification OTP has expired");
         }
 
-        User user = verificationToken.getUser();
+        User user = findByEmail(email);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+
         user.setEmailVerified(true);
         user.setEmailVerifiedAt(LocalDateTime.now());
         userRepository.save(user);
 
-        // Mark token as used
-        verificationToken.setUsed(true);
-        tokenRepository.save(verificationToken);
+        // Mark OTP as used
+        verificationOtp.setUsed(true);
+        otpRepository.save(verificationOtp);
 
         // Send welcome email
         emailService.sendWelcomeEmail(user.getEmail(), user.getFirstName());
@@ -156,15 +222,15 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Email is already verified");
         }
 
-        // Generate verification token
-        String verificationToken = UUID.randomUUID().toString();
-        LocalDateTime expiryDate = LocalDateTime.now().plusHours(24); // 24 hours expiry
+        // Generate verification OTP
+        String verificationOtp = generateOTP();
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10); // 10 minutes expiry
 
-        // Save token
-        Token token = new Token(verificationToken, Token.TokenType.EMAIL_VERIFICATION, user, expiryDate);
-        tokenRepository.save(token);
+        // Save OTP
+        OTP otp = new OTP(verificationOtp, email, OTP.OTPType.EMAIL_VERIFICATION, expiryDate);
+        otpRepository.save(otp);
 
         // Send email
-        emailService.sendVerificationEmail(email, verificationToken);
+        emailService.sendVerificationEmail(email, verificationOtp);
     }
 } 

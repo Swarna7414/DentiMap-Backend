@@ -1,7 +1,7 @@
 package com.security.service;
 
 public interface EmailService {
-    void sendVerificationEmail(String to, String verificationToken);
-    void sendPasswordResetEmail(String to, String resetToken);
+    void sendVerificationEmail(String to, String otp);
+    void sendPasswordResetEmail(String to, String otp);
     void sendWelcomeEmail(String to, String firstName);
 } 

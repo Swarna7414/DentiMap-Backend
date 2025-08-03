@@ -13,12 +13,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.io.IOException;
 import java.util.Arrays;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -26,8 +32,6 @@ public class SecurityConfig {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
-
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -45,6 +49,18 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler oauth2SuccessHandler() {
+        return new SimpleUrlAuthenticationSuccessHandler() {
+            @Override
+            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+                    org.springframework.security.core.Authentication authentication) throws IOException, ServletException {
+                // Redirect to frontend with success parameter
+                getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/PanInsight/login?oauth2_success=true");
+            }
+        };
     }
 
     @Bean
@@ -66,8 +82,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
-                .defaultSuccessUrl("/api/auth/oauth2-success", true)
-                .failureUrl("/api/auth/oauth2-failure")
+                .successHandler(oauth2SuccessHandler())
+                .failureUrl("http://localhost:3000/PanInsight/login?oauth2_failure=true")
             )
             .authenticationProvider(authenticationProvider());
 

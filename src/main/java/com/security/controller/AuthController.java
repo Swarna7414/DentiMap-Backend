@@ -329,6 +329,19 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/verify-reset-otp")
+    public ResponseEntity<ApiResponse> verifyResetOTP(@Valid @RequestBody OTPVerificationRequest request) {
+        try {
+            userService.verifyResetOTP(request.getOtp(), request.getEmail());
+            return ResponseEntity.ok(ApiResponse.success("Reset OTP verified successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Reset OTP verification failed: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {

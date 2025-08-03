@@ -76,7 +76,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/test", "/api/auth/debug/**").permitAll()
                 .requestMatchers("/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
                 .requestMatchers("/api/auth/verify-registration-otp", "/api/auth/resend-registration-otp").permitAll()
-                .requestMatchers("/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                .requestMatchers("/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/verify-reset-otp").permitAll()
                 .requestMatchers("/api/auth/check-auth").permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/oauth2/**").permitAll()

@@ -18,4 +18,5 @@ public interface UserService {
     void initiateRegistration(String email);
     void completeRegistration(String otp, String email, RegistrationRequest registrationRequest);
     void resendRegistrationOTP(String email);
+    void verifyResetOTP(String otp, String email);
 } 

@@ -233,4 +233,17 @@ public class UserServiceImpl implements UserService {
         // Send email
         emailService.sendVerificationEmail(email, verificationOtp);
     }
+
+    @Override
+    public void verifyResetOTP(String otp, String email) {
+        OTP resetOtp = otpRepository.findByOtpCodeAndEmailAndOtpTypeAndUsedFalse(otp, email, OTP.OTPType.PASSWORD_RESET)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset OTP"));
+
+        if (resetOtp.isExpired()) {
+            throw new IllegalArgumentException("Reset OTP has expired");
+        }
+
+        // OTP is valid, but we don't mark it as used yet
+        // It will be marked as used when the password is actually reset
+    }
 } 

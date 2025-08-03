@@ -10,4 +10,5 @@ public interface UserService {
     User findByEmail(String email);
     
     boolean existsByEmail(String email);
+    void deleteUser(String email);
 } 

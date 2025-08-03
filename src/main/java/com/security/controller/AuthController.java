@@ -60,15 +60,27 @@ public class AuthController {
     public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest loginRequest, 
                                            HttpServletRequest request) {
         try {
+            System.out.println("Login attempt for email: " + loginRequest.getEmail());
+            
+            // Check if user exists first
+            User user = userService.findByEmail(loginRequest.getEmail());
+            if (user == null) {
+                System.out.println("User not found with email: " + loginRequest.getEmail());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid email or password"));
+            }
+            
+            System.out.println("User found, attempting authentication...");
+            
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
             );
 
+            System.out.println("Authentication successful for user: " + loginRequest.getEmail());
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
             securityContextRepository.saveContext(SecurityContextHolder.getContext(), request, null);
 
-            User user = userService.findByEmail(loginRequest.getEmail());
-            
             Map<String, Object> userData = new HashMap<>();
             userData.put("id", user.getId());
             userData.put("firstName", user.getFirstName());
@@ -76,8 +88,11 @@ public class AuthController {
             userData.put("email", user.getEmail());
             userData.put("dateOfBirth", user.getDateOfBirth());
             
+            System.out.println("Login successful for user: " + user.getEmail());
             return ResponseEntity.ok(ApiResponse.success("Login successful", userData));
         } catch (Exception e) {
+            System.out.println("Login failed for email: " + loginRequest.getEmail() + " - Error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Invalid email or password"));
         }
@@ -144,5 +159,76 @@ public class AuthController {
     @GetMapping("/test")
     public ResponseEntity<ApiResponse> testEndpoint() {
         return ResponseEntity.ok(ApiResponse.success("Backend is working!"));
+    }
+
+    @GetMapping("/debug/user/{email}")
+    public ResponseEntity<ApiResponse> debugUser(@PathVariable String email) {
+        try {
+            User user = userService.findByEmail(email);
+            if (user != null) {
+                Map<String, Object> userData = new HashMap<>();
+                userData.put("id", user.getId());
+                userData.put("firstName", user.getFirstName());
+                userData.put("lastName", user.getLastName());
+                userData.put("email", user.getEmail());
+                userData.put("dateOfBirth", user.getDateOfBirth());
+                userData.put("hasPassword", user.getPassword() != null && !user.getPassword().isEmpty());
+                userData.put("passwordLength", user.getPassword() != null ? user.getPassword().length() : 0);
+                userData.put("passwordStartsWith", user.getPassword() != null ? user.getPassword().substring(0, Math.min(10, user.getPassword().length())) + "..." : "null");
+                return ResponseEntity.ok(ApiResponse.success("User found", userData));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error("User not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error checking user: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/debug/test-password")
+    public ResponseEntity<ApiResponse> testPassword(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String password = request.get("password");
+            
+            User user = userService.findByEmail(email);
+            if (user == null) {
+                return ResponseEntity.ok(ApiResponse.error("User not found"));
+            }
+            
+            // Get the password encoder
+            org.springframework.security.crypto.password.PasswordEncoder encoder = 
+                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+            
+            boolean matches = encoder.matches(password, user.getPassword());
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("email", email);
+            result.put("passwordProvided", password);
+            result.put("storedPasswordHash", user.getPassword());
+            result.put("passwordMatches", matches);
+            result.put("storedPasswordLength", user.getPassword().length());
+            
+            return ResponseEntity.ok(ApiResponse.success("Password test completed", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error testing password: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/debug/delete-user/{email}")
+    public ResponseEntity<ApiResponse> deleteUser(@PathVariable String email) {
+        try {
+            User user = userService.findByEmail(email);
+            if (user == null) {
+                return ResponseEntity.ok(ApiResponse.error("User not found"));
+            }
+            
+            userService.deleteUser(email);
+            return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Error deleting user: " + e.getMessage()));
+        }
     }
 } 

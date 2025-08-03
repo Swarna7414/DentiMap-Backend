@@ -3,9 +3,7 @@
 ## MySQL Configuration for Spring Boot Security Application
 
 ### Database Schema
-The application uses two user tables:
-
-#### 1. Regular Users Table (`users`)
+The application uses the following user table structure:
 - `id` (Primary Key)
 - `first_name` (Required)
 - `last_name` (Required)
@@ -16,18 +14,6 @@ The application uses two user tables:
 - `created_at` (Auto-generated)
 - `email_verified` (Boolean, Default: false)
 - `email_verified_at` (DateTime, Nullable)
-
-#### 2. OAuth2 Users Table (`oauth2_users`)
-- `id` (Primary Key)
-- `first_name` (Required)
-- `last_name` (Required)
-- `email` (Required, Unique)
-- `google_id` (Google OAuth2 ID)
-- `profile_picture` (Profile picture URL)
-- `provider` (OAuth2 provider, Default: "GOOGLE")
-- `created_at` (Auto-generated)
-- `last_login` (Last login timestamp)
-- `is_active` (Boolean, Default: true)
 
 ### Step 1: Ensure MySQL is Running
 - Make sure MySQL Server is running on your system

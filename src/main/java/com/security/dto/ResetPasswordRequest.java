@@ -22,10 +22,10 @@ public class ResetPasswordRequest {
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
 
-    // Default constructor
+    
     public ResetPasswordRequest() {}
 
-    // Constructor with fields
+    
     public ResetPasswordRequest(String otp, String email, String password, String confirmPassword) {
         this.otp = otp;
         this.email = email;
@@ -33,7 +33,7 @@ public class ResetPasswordRequest {
         this.confirmPassword = confirmPassword;
     }
 
-    // Getters and Setters
+    
     public String getOtp() {
         return otp;
     }

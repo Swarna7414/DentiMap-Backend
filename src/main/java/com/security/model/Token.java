@@ -36,10 +36,10 @@ public class Token {
         PASSWORD_RESET
     }
 
-    // Default constructor
+    
     public Token() {}
 
-    // Constructor with fields
+    
     public Token(String token, TokenType tokenType, User user, LocalDateTime expiryDate) {
         this.token = token;
         this.tokenType = tokenType;
@@ -48,7 +48,7 @@ public class Token {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }

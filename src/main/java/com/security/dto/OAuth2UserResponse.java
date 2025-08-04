@@ -15,11 +15,11 @@ public class OAuth2UserResponse {
     private LocalDateTime lastLogin;
     private Boolean isActive;
     
-    // Default constructor
+    
     public OAuth2UserResponse() {
     }
     
-    // Constructor with all fields
+    
     public OAuth2UserResponse(Long id, String firstName, String lastName, String email, 
                              String googleId, String profilePicture, String provider, 
                              LocalDateTime createdAt, LocalDateTime lastLogin, Boolean isActive) {
@@ -35,7 +35,7 @@ public class OAuth2UserResponse {
         this.isActive = isActive;
     }
     
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }

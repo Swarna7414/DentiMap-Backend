@@ -9,15 +9,13 @@ public class OTPRequest {
     @Email(message = "Email should be valid")
     private String email;
     
-    // Default constructor
+    
     public OTPRequest() {}
     
-    // Constructor with fields
     public OTPRequest(String email) {
         this.email = email;
     }
     
-    // Getters and Setters
     public String getEmail() {
         return email;
     }

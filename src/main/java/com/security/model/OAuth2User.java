@@ -44,11 +44,9 @@ public class OAuth2User {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    // Default constructor
     public OAuth2User() {
     }
 
-    // Constructor with required fields
     public OAuth2User(String firstName, String lastName, String email, String googleId) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -59,7 +57,7 @@ public class OAuth2User {
         this.isActive = true;
     }
 
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }

@@ -32,10 +32,8 @@ public class RegistrationRequest {
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
 
-    // Default constructor
     public RegistrationRequest() {}
 
-    // Constructor with fields
     public RegistrationRequest(String firstName, String lastName, LocalDate dateOfBirth, String gender, String email, String password, String confirmPassword) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -46,7 +44,7 @@ public class RegistrationRequest {
         this.confirmPassword = confirmPassword;
     }
 
-    // Getters and Setters
+    
     public String getFirstName() {
         return firstName;
     }

@@ -5,10 +5,10 @@ public class ApiResponse {
     private String message;
     private Object data;
 
-    // Default constructor
+    
     public ApiResponse() {}
 
-    // Constructor with fields
+
     public ApiResponse(boolean success, String message) {
         this.success = success;
         this.message = message;
@@ -20,7 +20,7 @@ public class ApiResponse {
         this.data = data;
     }
 
-    // Static factory methods
+    
     public static ApiResponse success(String message) {
         return new ApiResponse(true, message);
     }
@@ -33,7 +33,7 @@ public class ApiResponse {
         return new ApiResponse(false, message);
     }
 
-    // Getters and Setters
+    
     public boolean isSuccess() {
         return success;
     }

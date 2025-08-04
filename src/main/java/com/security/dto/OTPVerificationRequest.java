@@ -14,16 +14,16 @@ public class OTPVerificationRequest {
     @Pattern(regexp = "\\d{5}", message = "OTP must be exactly 5 digits")
     private String otp;
     
-    // Default constructor
+    
     public OTPVerificationRequest() {}
     
-    // Constructor with fields
+    
     public OTPVerificationRequest(String email, String otp) {
         this.email = email;
         this.otp = otp;
     }
     
-    // Getters and Setters
+    
     public String getEmail() {
         return email;
     }

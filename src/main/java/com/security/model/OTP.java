@@ -36,12 +36,12 @@ public class OTP {
         REGISTRATION_VERIFICATION
     }
 
-    // Default constructor
+    
     public OTP() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Constructor with fields
+    
     public OTP(String otpCode, String email, OTPType otpType, LocalDateTime expiryDate) {
         this.otpCode = otpCode;
         this.email = email;
@@ -50,7 +50,7 @@ public class OTP {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }

@@ -61,10 +61,10 @@ public class User implements UserDetails {
         createdAt = LocalDate.now();
     }
 
-    // Default constructor
+    
     public User() {}
 
-    // Constructor with fields
+    
     public User(String firstName, String lastName, LocalDate dateOfBirth, String gender, String email, String password) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -74,7 +74,7 @@ public class User implements UserDetails {
         this.password = password;
     }
 
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }
@@ -151,7 +151,7 @@ public class User implements UserDetails {
         this.emailVerifiedAt = emailVerifiedAt;
     }
 
-    // UserDetails implementation
+    
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));

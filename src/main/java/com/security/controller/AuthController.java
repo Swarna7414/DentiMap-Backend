@@ -53,7 +53,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegistrationRequest registrationRequest) {
         try {
-            // Initiate registration by sending OTP
+            
             userService.initiateRegistration(registrationRequest.getEmail());
             
             Map<String, Object> responseData = new HashMap<>();
@@ -73,7 +73,7 @@ public class AuthController {
     @PostMapping("/verify-registration-otp")
     public ResponseEntity<ApiResponse> verifyRegistrationOTP(@Valid @RequestBody RegistrationOTPRequest request) {
         try {
-            // Create RegistrationRequest from the OTP request
+            
             RegistrationRequest registrationRequest = new RegistrationRequest();
             registrationRequest.setFirstName(request.getFirstName());
             registrationRequest.setLastName(request.getLastName());
@@ -83,7 +83,7 @@ public class AuthController {
             registrationRequest.setPassword(request.getPassword());
             registrationRequest.setConfirmPassword(request.getConfirmPassword());
             
-            // Complete registration with OTP verification
+            
             userService.completeRegistration(request.getOtp(), request.getEmail(), registrationRequest);
             
             Map<String, Object> responseData = new HashMap<>();
@@ -118,7 +118,7 @@ public class AuthController {
         try {
             System.out.println("Login attempt for email: " + loginRequest.getEmail());
             
-            // Check if user exists first
+        
             User user = userService.findByEmail(loginRequest.getEmail());
             if (user == null) {
                 System.out.println("User not found with email: " + loginRequest.getEmail());
@@ -252,7 +252,7 @@ public class AuthController {
                 return ResponseEntity.ok(ApiResponse.error("User not found"));
             }
             
-            // Get the password encoder
+        
             org.springframework.security.crypto.password.PasswordEncoder encoder = 
                 new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
             
@@ -288,7 +288,7 @@ public class AuthController {
         }
     }
 
-    // Email Verification Endpoints
+    
     @PostMapping("/verify-email")
     public ResponseEntity<ApiResponse> verifyEmail(@Valid @RequestBody OTPVerificationRequest request) {
         try {
@@ -315,7 +315,6 @@ public class AuthController {
         }
     }
 
-    // Password Reset Endpoints
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
@@ -359,14 +358,13 @@ public class AuthController {
         }
     }
 
-    // OAuth2 Endpoints
     @GetMapping("/oauth2-success")
     public ResponseEntity<ApiResponse> oauth2Success() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.isAuthenticated()) {
                 
-                // Extract OAuth2 user information
+                
                 Object principal = authentication.getPrincipal();
                 String email = null;
                 String firstName = null;
@@ -388,16 +386,16 @@ public class AuthController {
                 }
                 
                 if (email != null) {
-                    // Check if user exists in OAuth2 table
+                    
                     Optional<OAuth2User> existingUser = oauth2UserService.findByEmail(email);
                     OAuth2User oauth2User;
                     
                     if (existingUser.isPresent()) {
-                        // Update last login for existing user
+                        
                         oauth2User = oauth2UserService.updateLastLogin(email);
                         System.out.println("Existing OAuth2 user logged in: " + email);
                     } else {
-                        // Create new OAuth2 user
+                        
                         oauth2User = oauth2UserService.createOAuth2User(
                             firstName != null ? firstName : "Unknown",
                             lastName != null ? lastName : "User",
@@ -408,7 +406,7 @@ public class AuthController {
                         System.out.println("New OAuth2 user created: " + email);
                     }
                     
-                    // Create response data
+                    
                     Map<String, Object> userData = new HashMap<>();
                     userData.put("message", "OAuth2 user created and login successful");
                     userData.put("user", new OAuth2UserResponse(
@@ -455,7 +453,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("OAuth2 login URLs", data));
     }
 
-    // OAuth2 User Management Endpoints
+    
     @GetMapping("/oauth2/users")
     public ResponseEntity<ApiResponse> getAllOAuth2Users() {
         try {

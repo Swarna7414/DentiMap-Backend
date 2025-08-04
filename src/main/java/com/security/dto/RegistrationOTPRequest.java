@@ -34,10 +34,9 @@ public class RegistrationOTPRequest {
     @Pattern(regexp = "\\d{5}", message = "OTP must be exactly 5 digits")
     private String otp;
     
-    // Default constructor
+    
     public RegistrationOTPRequest() {}
     
-    // Constructor with fields
     public RegistrationOTPRequest(String firstName, String lastName, String dateOfBirth, String gender, 
                                  String email, String password, String confirmPassword, String otp) {
         this.firstName = firstName;
@@ -50,7 +49,6 @@ public class RegistrationOTPRequest {
         this.otp = otp;
     }
     
-    // Getters and Setters
     public String getFirstName() {
         return firstName;
     }

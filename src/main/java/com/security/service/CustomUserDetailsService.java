@@ -25,11 +25,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         System.out.println("Password length: " + (user.getPassword() != null ? user.getPassword().length() : 0));
         System.out.println("Email verified: " + user.isEmailVerified());
         
-        // Optional: Check if email is verified (you can enable this for stricter security)
-        // if (!user.isEmailVerified()) {
-        //     throw new UsernameNotFoundException("Email not verified for user: " + email);
-        // }
-        
         return user;
     }
 } 

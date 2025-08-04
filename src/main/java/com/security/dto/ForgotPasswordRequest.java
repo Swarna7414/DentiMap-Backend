@@ -9,15 +9,12 @@ public class ForgotPasswordRequest {
     @Email(message = "Email should be valid")
     private String email;
 
-    // Default constructor
     public ForgotPasswordRequest() {}
 
-    // Constructor with fields
     public ForgotPasswordRequest(String email) {
         this.email = email;
     }
 
-    // Getters and Setters
     public String getEmail() {
         return email;
     }

@@ -57,7 +57,7 @@ public class SecurityConfig {
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                     org.springframework.security.core.Authentication authentication) throws IOException, ServletException {
-                // Redirect to frontend with success parameter
+            
                 getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/PanInsight/login?oauth2_success=true");
             }
         };

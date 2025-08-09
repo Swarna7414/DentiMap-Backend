@@ -57,8 +57,8 @@ public class SecurityConfig {
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                     org.springframework.security.core.Authentication authentication) throws IOException, ServletException {
-            
-                getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/PanInsight/login?oauth2_success=true");
+                // Redirect to frontend with success parameter
+                getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/DentiMap/login?oauth2_success=true");
             }
         };
     }
@@ -84,7 +84,7 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth2 -> oauth2
                 .successHandler(oauth2SuccessHandler())
-                .failureUrl("http://localhost:3000/PanInsight/login?oauth2_failure=true")
+                .failureUrl("http://localhost:3000/DentiMap/login?oauth2_failure=true")
             )
             .authenticationProvider(authenticationProvider());
 
@@ -94,7 +94,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://localhost:8081", "http://localhost:8082", "http://localhost:3000/PanInsight"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://localhost:8081", "http://localhost:8082", "http://localhost:3000/DentiMap","http://localhost:3000/DentiMap/otp"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

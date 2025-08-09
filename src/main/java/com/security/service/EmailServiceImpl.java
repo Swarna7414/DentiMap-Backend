@@ -23,16 +23,16 @@ public class EmailServiceImpl implements EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
-        message.setSubject("Email Verification - PanInsight");
+        message.setSubject("Email Verification - DentiMap");
         
         message.setText(
             "Hello!\n\n" +
-            "Thank you for registering with PanInsight. Please verify your email address using the OTP below:\n\n" +
+            "Thank you for registering with DentiMap. Please verify your email address using the OTP below:\n\n" +
             "Your verification OTP is: " + otp + "\n\n" +
             "This OTP will expire in 10 minutes.\n\n" +
             "If you didn't create an account, please ignore this email.\n\n" +
             "Best regards,\n" +
-            "PanInsight Team"
+            "DentiMap Team"
         );
         
         mailSender.send(message);
@@ -43,16 +43,16 @@ public class EmailServiceImpl implements EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
-        message.setSubject("Password Reset Request - PanInsight");
+        message.setSubject("Password Reset Request - DentiMap");
         
         message.setText(
             "Hello!\n\n" +
-            "You have requested to reset your password for your PanInsight account.\n\n" +
+            "You have requested to reset your password for your DentiMap account.\n\n" +
             "Your password reset OTP is: " + otp + "\n\n" +
             "This OTP will expire in 10 minutes.\n\n" +
             "If you didn't request a password reset, please ignore this email.\n\n" +
             "Best regards,\n" +
-            "PanInsight Team"
+            "DentiMap Team"
         );
         
         mailSender.send(message);
@@ -63,7 +63,7 @@ public class EmailServiceImpl implements EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromEmail);
         message.setTo(to);
-        message.setSubject("Welcome to PanInsight!");
+        message.setSubject("Welcome to DentiMap!");
         
         message.setText(
             "Hello " + firstName + "!\n\n" +
@@ -74,7 +74,7 @@ public class EmailServiceImpl implements EmailService {
             "- Advanced insights and reports\n\n" +
             "If you have any questions, feel free to contact our support team.\n\n" +
             "Best regards,\n" +
-            "PanInsight Team"
+            "DentiMap Team"
         );
         
         mailSender.send(message);

@@ -17,7 +17,7 @@ public class OAuth2User {
     @Column(name = "first_name")
     private String firstName;
     
-    @NotBlank(message = "Last name is required")
+    @NotBlank(message = "Last name is  required")
     @Column(name = "last_name")
     private String lastName;
     

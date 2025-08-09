@@ -31,18 +31,18 @@ public class UserServiceImpl implements UserService {
     public void initiateRegistration(String email) {
         
         if (existsByEmail(email)) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new IllegalArgumentException("Email Already exists");
         }
 
         
         String registrationOtp = generateOTP();
-        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10); // 10 minutes expiry
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(10);
 
         // Save OTP
         OTP otp = new OTP(registrationOtp, email, OTP.OTPType.REGISTRATION_VERIFICATION, expiryDate);
         otpRepository.save(otp);
 
-        // Send registration OTP email
+
         emailService.sendVerificationEmail(email, registrationOtp);
     }
 

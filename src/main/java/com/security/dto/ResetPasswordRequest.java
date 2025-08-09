@@ -65,4 +65,5 @@ public class ResetPasswordRequest {
     public void setConfirmPassword(String confirmPassword) {
         this.confirmPassword = confirmPassword;
     }
-} 
+
+}

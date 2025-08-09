@@ -14,6 +14,7 @@ public class OTP {
     @Column(nullable = false, length = 5)
     private String otpCode;
 
+
     @Column(nullable = false)
     private String email;
 

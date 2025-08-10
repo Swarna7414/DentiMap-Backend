@@ -1,4 +1,5 @@
-# Pan-Backend
+# Dentimap-Backend
+
 
 A robust Spring Boot backend application for the PanInsight security platform, providing comprehensive authentication, authorization, and user management services.
 
